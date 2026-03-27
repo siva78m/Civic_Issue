@@ -1,0 +1,12 @@
+## First Terminal
+npm run dev
+
+## Second Terminal
+cd python
+uvicorn main:app --reload --port 8000
+
+## Third Terminal
+ngrok http --url=uncomplemented-erlene-winded.ngrok-free.dev 3000
+
+To open dataabase
+npm run db:studio 
