@@ -1,1 +1,132 @@
+// This is your Prisma schema file
+generator client {
+  provider = "prisma-client-js"
+}
 
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CITIZEN
+  ADMIN
+}
+
+enum Category {
+  POTHOLE
+  GARBAGE
+  WATER_LEAKAGE
+  DAMAGED_INFRASTRUCTURE
+  STREET_LIGHT
+  SEWAGE
+  ENCROACHMENT
+  NOISE_POLLUTION
+  AIR_POLLUTION
+  OTHER
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum Urgency {
+  LOW
+  MEDIUM
+  HIGH
+  IMMEDIATE
+}
+
+enum Status {
+  PENDING
+  UNDER_REVIEW
+  IN_PROGRESS
+  RESOLVED
+  REJECTED
+  DUPLICATE
+}
+
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  name      String?
+  imageUrl  String?
+  role      Role     @default(CITIZEN)
+  issues    Issue[]
+  upvotes   Upvote[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Issue {
+  id            String    @id @default(cuid())
+  title         String
+  description   String    @db.Text
+  category      Category
+  severity      Severity  @default(MEDIUM)
+  urgency       Urgency   @default(MEDIUM)
+  status        Status    @default(PENDING)
+  priorityScore Float     @default(0)
+  latitude      Float
+  longitude     Float
+  address       String?
+  imageUrls     String[]
+  upvoteCount   Int       @default(0)
+  assignedTo    String?
+  adminNotes    String?   @db.Text
+  resolvedAt    DateTime?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  upvotes Upvote[]
+
+  duplicateOfId String?
+  duplicateOf   Issue?  @relation("Duplicates", fields: [duplicateOfId], references: [id])
+  duplicates    Issue[] @relation("Duplicates")
+
+  aiAnalysis AIAnalysis?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([category])
+  @@index([priorityScore(sort: Desc)])
+  @@index([latitude, longitude])
+  @@index([userId])
+}
+
+model Upvote {
+  id        String   @id @default(cuid())
+  issueId   String
+  userId    String
+  createdAt DateTime @default(now())
+
+  issue Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([issueId, userId])
+  @@index([issueId])
+}
+
+model AIAnalysis {
+  id            String   @id @default(cuid())
+  issueId       String   @unique
+  category      String
+  severity      String
+  urgency       String
+  priorityScore Float
+  confidence    Float
+  analysisText  String   @db.Text
+  tags          String[]
+  isDuplicate   Boolean  @default(false)
+  duplicateOfId String?
+  createdAt     DateTime @default(now())
+
+  issue Issue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+}
